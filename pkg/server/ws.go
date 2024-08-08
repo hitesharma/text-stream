@@ -6,9 +6,6 @@ import (
 	"github.com/hitesharma/text-stream/pkg/infra/websocket"
 )
 
-type TextServer struct {
-}
-
 func NewTextServer() *websocket.Server {
 	// Initialize providers and provider manager
 	providersList := []provider.InferenceProvider{

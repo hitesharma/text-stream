@@ -41,6 +41,7 @@ func (h *TextHandler) ServeWsConn(ctx *websocket.Context) {
 			break
 		}
 
+		// Temporary: Add time delay to mimic message processing.
 		time.Sleep(1 * time.Second)
 	}
 }
