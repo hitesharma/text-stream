@@ -12,9 +12,9 @@ type TextServer struct {
 func NewTextServer() *websocket.Server {
 	// Initialize providers and provider manager
 	providersList := []provider.InferenceProvider{
-		provider.ProviderA,
-		provider.ProviderB,
-		provider.ProviderC,
+		provider.Provider1,
+		provider.Provider2,
+		provider.Provider3,
 	}
 	providerManager := provider.NewProviderManager(providersList)
 

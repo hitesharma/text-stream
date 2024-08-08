@@ -23,6 +23,9 @@ func NewTextHandler(manager *provider.ProviderManager) *TextHandler {
 func (h *TextHandler) ServeWsConn(ctx *websocket.Context) {
 	defer ctx.Conn.Close()
 
+	// Start monitoring and switching providers
+	h.providerManager.MonitorAndSwitch()
+
 	for {
 		response, err := h.providerManager.GetCurrentProvider()()
 		if err != nil {
