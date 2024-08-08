@@ -10,16 +10,31 @@ import (
 )
 
 const (
-	SERVER_URL = "ws://localhost:8088/ws"
+	SERVER_URL   = "ws://localhost:8088/ws"
+	CONN_RETRIES = 5
 )
+
+func connectWebSocket() *websocket.Conn {
+	retry := 0
+	for {
+		conn, _, err := websocket.DefaultDialer.Dial(SERVER_URL, nil)
+		if err != nil {
+			log.Println("Failed to connect, retrying in 5 seconds:", err)
+			retry++
+			if retry == CONN_RETRIES {
+				log.Fatalf("failed to connect to ws endpoint after %d tries; exiting\n", CONN_RETRIES)
+			}
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		log.Println("Connected to WebSocket server")
+		return conn
+	}
+}
 
 func main() {
 	// Connect to the WebSocket server
-	log.Printf("Connecting to %s...", SERVER_URL)
-	conn, _, err := websocket.DefaultDialer.Dial(SERVER_URL, nil)
-	if err != nil {
-		log.Fatal("Error connecting to WebSocket server:", err)
-	}
+	conn := connectWebSocket()
 	defer conn.Close()
 	log.Println("Connected to server.")
 
