@@ -23,25 +23,60 @@ func NewTextHandler(manager *provider.ProviderManager) *TextHandler {
 func (h *TextHandler) ServeWsConn(ctx *websocket.Context) {
 	defer ctx.Conn.Close()
 
+	// Set up a close handler
+	ctx.Conn.SetCloseHandler(func(code int, text string) error {
+		log.Printf("Connection closed: code=%d, text=%s", code, text)
+		return nil
+	})
+
+	// Create a channel to signal when the connection is closed
+	closeSignal := make(chan struct{})
+	go func() {
+		defer close(closeSignal)
+		for {
+			_, _, err := ctx.Conn.ReadMessage()
+			if err != nil {
+				// Handle the error and close the connection
+				if ws.IsCloseError(err, ws.CloseGoingAway, ws.CloseAbnormalClosure) {
+					log.Printf("Client connection closed abnormally:: %v", err)
+				} else if ws.IsCloseError(err, ws.CloseNormalClosure) {
+					log.Printf("Client connection closed normally:: %v", err)
+				} else {
+					log.Printf("Error reading message: %v", err)
+				}
+				// Exit the goroutine and signal closure
+				return
+			}
+		}
+	}()
+
 	// Start monitoring and switching providers
 	h.providerManager.MonitorAndSwitch()
 
 	for {
-		response, err := h.providerManager.RunCurrentProvider()
-		if err != nil {
-			log.Printf("Error: %v", err)
-			h.providerManager.SwitchProvider()
-			continue
-		}
+		select {
+		case <-closeSignal:
+			// Stop processing if the close signal is received
+			log.Println("Connection closed, stopping processing")
+			return
 
-		// Send message to the WebSocket client
-		err = ctx.Conn.WriteMessage(ws.TextMessage, []byte(response))
-		if err != nil {
-			log.Println("Error writing to WebSocket:", err)
-			break
-		}
+		default:
+			response, err := h.providerManager.RunCurrentProvider()
+			if err != nil {
+				log.Printf("Error: %v", err)
+				h.providerManager.SwitchProvider()
+				continue
+			}
 
-		// Temporary: Add time delay to mimic message processing.
-		time.Sleep(1 * time.Second)
+			// Send message to the WebSocket client
+			err = ctx.Conn.WriteMessage(ws.TextMessage, []byte(response))
+			if err != nil {
+				log.Println("Error writing to WebSocket:", err)
+				break
+			}
+
+			// Temporary: Add time delay to mimic message processing.
+			time.Sleep(1 * time.Second)
+		}
 	}
 }
