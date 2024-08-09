@@ -9,7 +9,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Request context to
+// Context holds the information related to a WebSocket connection and
+// the associated request context
 type Context struct {
 	Conn *websocket.Conn
 	Url  *url.URL

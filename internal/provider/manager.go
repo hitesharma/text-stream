@@ -10,16 +10,22 @@ type ProviderManager struct {
 	currentId int
 }
 
-func NewProviderManager(providers []InferenceProvider) *ProviderManager {
-	return &ProviderManager{
-		providers: providers,
-		currentId: 0,
-	}
+var providerManager = &ProviderManager{}
+
+func GetProviderManager() *ProviderManager {
+	providerManager.currentId = 0
+	return providerManager
 }
 
-// GetCurrentProvider gets current provider based on the set current Id
-func (m *ProviderManager) GetCurrentProvider() InferenceProvider {
-	return m.providers[m.currentId]
+// RunCurrentProvider executes the current provider function based on the
+// set current ID in the ProviderManager.
+func (m *ProviderManager) RunCurrentProvider() (string, error) {
+	provider := m.providers[m.currentId]
+	currentHost := inferenceProviderHosts[m.currentId]
+
+	return func(currentHost string) (string, error) {
+		return provider(currentHost)
+	}(currentHost)
 }
 
 // SwitchProvider switches to the next available provider in the pool
@@ -43,8 +49,8 @@ func (m *ProviderManager) MonitorAndSwitch() {
 	ticker := time.NewTicker(5 * time.Second)
 	go func() {
 		for range ticker.C {
-			// Get current provider and check for it's health
-			_, err := m.GetCurrentProvider()()
+			// Run current provider to check for it's health
+			_, err := m.RunCurrentProvider()
 			if err != nil {
 				log.Printf("Error detected: %v, switching provider", err)
 				m.SwitchProvider()

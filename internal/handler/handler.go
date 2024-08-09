@@ -27,7 +27,7 @@ func (h *TextHandler) ServeWsConn(ctx *websocket.Context) {
 	h.providerManager.MonitorAndSwitch()
 
 	for {
-		response, err := h.providerManager.GetCurrentProvider()()
+		response, err := h.providerManager.RunCurrentProvider()
 		if err != nil {
 			log.Printf("Error: %v", err)
 			h.providerManager.SwitchProvider()
